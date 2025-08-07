@@ -1,0 +1,73 @@
+@page "/quotations/create"
+@inject ApplicationDbContext DbContext
+@inject NavigationManager NavigationManager
+
+<h3>Create Quotation</h3>
+
+<EditForm Model="@quotation" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label for="customerName" class="form-label">Customer Name</label>
+        <InputText id="customerName" class="form-control" @bind-Value="quotation.Customer.Name" />
+    </div>
+
+    <div class="mb-3">
+        <label for="customerEmail" class="form-label">Customer Email</label>
+        <InputText id="customerEmail" class="form-control" @bind-Value="quotation.Customer.Email" />
+    </div>
+
+    <div class="mb-3">
+        <label for="customerAddress" class="form-label">Customer Address</label>
+        <InputText id="customerAddress" class="form-control" @bind-Value="quotation.Customer.Address" />
+    </div>
+
+    <h4>Items</h4>
+
+    @foreach (var item in quotation.Items)
+    {
+        <div class="row mb-2">
+            <div class="col">
+                <InputText class="form-control" @bind-Value="item.Description" placeholder="Description" />
+            </div>
+            <div class="col">
+                <InputNumber class="form-control" @bind-Value="item.Quantity" placeholder="Quantity" />
+            </div>
+            <div class="col">
+                <InputNumber class="form-control" @bind-Value="item.Price" placeholder="Price" />
+            </div>
+            <div class="col">
+                <button type="button" class="btn btn-danger" @onclick="() => RemoveItem(item)">Remove</button>
+            </div>
+        </div>
+    }
+
+    <button type="button" class="btn btn-primary mb-3" @onclick="AddItem">Add Item</button>
+
+    <div class="mb-3">
+        <button type="submit" class="btn btn-success">Create Quotation</button>
+    </div>
+</EditForm>
+
+@code {
+    private Quotation quotation = new Quotation { Customer = new Customer(), Date = DateTime.Now };
+
+    private void AddItem()
+    {
+        quotation.Items.Add(new QuotationItem());
+    }
+
+    private void RemoveItem(QuotationItem item)
+    {
+        quotation.Items.Remove(item);
+    }
+
+    private void HandleValidSubmit()
+    {
+        quotation.QuotationNumber = $"QUO-{DateTime.Now:yyyyMMddHHmmss}";
+        DbContext.Quotations.Add(quotation);
+        DbContext.SaveChanges();
+        NavigationManager.NavigateTo("/quotations");
+    }
+}

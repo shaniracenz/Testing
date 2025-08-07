@@ -1,0 +1,49 @@
+@page "/quotations"
+@inject ApplicationDbContext DbContext
+@inject NavigationManager NavigationManager
+
+<h3>Quotations</h3>
+
+<p>
+    <a href="/quotations/create" class="btn btn-primary">Create New Quotation</a>
+</p>
+
+@if (quotations == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Quotation Number</th>
+                <th>Customer</th>
+                <th>Date</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var quotation in quotations)
+            {
+                <tr>
+                    <td>@quotation.QuotationNumber</td>
+                    <td>@quotation.Customer.Name</td>
+                    <td>@quotation.Date.ToShortDateString()</td>
+                    <td>
+                        <a href="/quotations/@quotation.Id" class="btn btn-sm btn-info">View</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Quotation> quotations;
+
+    protected override void OnInitialized()
+    {
+        quotations = DbContext.Quotations.Include(q => q.Customer).ToList();
+    }
+}

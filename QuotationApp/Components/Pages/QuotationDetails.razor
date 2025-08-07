@@ -1,0 +1,89 @@
+@page "/quotations/{id:int}"
+@inject ApplicationDbContext DbContext
+@inject PdfService PdfService
+@inject EmailService EmailService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<h3>Quotation Details</h3>
+
+@if (quotation == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div>
+        <h4>Quotation #@quotation.QuotationNumber</h4>
+        <dl class="row">
+            <dt class="col-sm-3">Customer Name</dt>
+            <dd class="col-sm-9">@quotation.Customer.Name</dd>
+
+            <dt class="col-sm-3">Customer Email</dt>
+            <dd class="col-sm-9">@quotation.Customer.Email</dd>
+
+            <dt class="col-sm-3">Customer Address</dt>
+            <dd class="col-sm-9">@quotation.Customer.Address</dd>
+
+            <dt class="col-sm-3">Date</dt>
+            <dd class="col-sm-9">@quotation.Date.ToShortDateString()</dd>
+        </dl>
+
+        <h5>Items</h5>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in quotation.Items)
+                {
+                    <tr>
+                        <td>@item.Description</td>
+                        <td>@item.Quantity</td>
+                        <td>@item.Price.ToString("C")</td>
+                        <td>@((item.Quantity * item.Price).ToString("C"))</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <button class="btn btn-primary" @onclick="DownloadPdf">Download PDF</button>
+        <button class="btn btn-success" @onclick="SendEmail">Send Email</button>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Quotation quotation;
+
+    protected override void OnInitialized()
+    {
+        quotation = DbContext.Quotations
+            .Include(q => q.Customer)
+            .Include(q => q.Items)
+            .FirstOrDefault(q => q.Id == Id);
+    }
+
+    private async Task DownloadPdf()
+    {
+        var pdfBytes = PdfService.GenerateQuotationPdf(quotation);
+        var fileName = $"{quotation.QuotationNumber}.pdf";
+        var fileStream = new MemoryStream(pdfBytes);
+        using var streamRef = new DotNetStreamReference(stream: fileStream);
+        await JSRuntime.InvokeVoidAsync("saveAsFile", fileName, Convert.ToBase64String(pdfBytes));
+    }
+
+    private async Task SendEmail()
+    {
+        var pdfBytes = PdfService.GenerateQuotationPdf(quotation);
+        await EmailService.SendQuotationEmailAsync(quotation.Customer.Email, $"Quotation {quotation.QuotationNumber}", "Please find your quotation attached.", pdfBytes, $"{quotation.QuotationNumber}.pdf");
+        // Optionally, add some user feedback here (e.g., a toast notification).
+    }
+}
