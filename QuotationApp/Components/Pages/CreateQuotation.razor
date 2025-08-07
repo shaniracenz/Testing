@@ -68,6 +68,6 @@
         quotation.QuotationNumber = $"QUO-{DateTime.Now:yyyyMMddHHmmss}";
         DbContext.Quotations.Add(quotation);
         DbContext.SaveChanges();
-        NavigationManager.NavigateTo("/quotations");
+        NavigationManager.NavigateTo("/quotations", forceLoad: true);
     }
 }
