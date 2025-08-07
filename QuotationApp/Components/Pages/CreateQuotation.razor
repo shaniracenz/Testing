@@ -51,7 +51,7 @@
 </EditForm>
 
 @code {
-    private Quotation quotation = new Quotation { Customer = new Customer(), Date = DateTime.Now };
+    private Quotation quotation = new Quotation { Customer = new Customer(), Date = DateTime.Now, Items = new List<QuotationItem>() };
 
     private void AddItem()
     {
