@@ -53,7 +53,21 @@ else
         </table>
 
         <button class="btn btn-primary" @onclick="DownloadPdf">Download PDF</button>
-        <button class="btn btn-success" @onclick="SendEmail">Send Email</button>
+        <button class="btn btn-success" @onclick="SendEmail" disabled="@isSending">
+            @if (isSending)
+            {
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span>Sending...</span>
+            }
+            else
+            {
+                <span>Send Email</span>
+            }
+        </button>
+        @if (!string.IsNullOrEmpty(emailStatus))
+        {
+            <p class="mt-2">@emailStatus</p>
+        }
     </div>
 }
 
@@ -62,6 +76,8 @@ else
     public int Id { get; set; }
 
     private Quotation quotation;
+    private bool isSending = false;
+    private string emailStatus = "";
 
     protected override void OnInitialized()
     {
@@ -82,8 +98,25 @@ else
 
     private async Task SendEmail()
     {
-        var pdfBytes = PdfService.GenerateQuotationPdf(quotation);
-        await EmailService.SendQuotationEmailAsync(quotation.Customer.Email, $"Quotation {quotation.QuotationNumber}", "Please find your quotation attached.", pdfBytes, $"{quotation.QuotationNumber}.pdf");
-        // Optionally, add some user feedback here (e.g., a toast notification).
+        isSending = true;
+        emailStatus = "Sending...";
+        StateHasChanged();
+
+        try
+        {
+            var pdfBytes = PdfService.GenerateQuotationPdf(quotation);
+            await EmailService.SendQuotationEmailAsync(quotation.Customer.Email, $"Quotation {quotation.QuotationNumber}", "Please find your quotation attached.", pdfBytes, $"{quotation.QuotationNumber}.pdf");
+            emailStatus = "Email sent successfully!";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            emailStatus = $"Error sending email: {ex.Message}";
+        }
+        finally
+        {
+            isSending = false;
+            StateHasChanged();
+        }
     }
 }
